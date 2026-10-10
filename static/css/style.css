@@ -1,0 +1,516 @@
+/* -------------------------------------------------------------
+   Nursing Schedule — dark, mobile-first styles.
+   Night-friendly palette: deep navy surfaces, warm accent, low
+   contrast hour labels so nothing glares at 3 AM.
+   ------------------------------------------------------------- */
+
+:root {
+    --bg: #0b0f1a;
+    --bg-elev: #141a2a;
+    --bg-elev-2: #1d243a;
+    --border: #232a44;
+    --fg: #e8ecf7;
+    --fg-dim: #8992b1;
+    --fg-dimmer: #4a5273;
+    --accent: #f3b5a4;      /* warm salmon — last feed / selected */
+    --accent-strong: #ff9a7a;
+    --accent-ink: #2a1510;
+    --marker: #6bc2a3;       /* mint — for upcoming feeds */
+    --now: #9bbcff;          /* cool blue — the live "now" line */
+    --danger: #ef6b6b;
+
+    --radius: 14px;
+    --radius-sm: 10px;
+
+    /* Timeline geometry (px-per-minute is documentation; actual value is
+       set in app.js as PX_PER_MINUTE and wins for layout math). */
+    --px-per-minute: 1;      /* 60px per hour → ~6 hours on-screen */
+    --timeline-height: 56vh;
+    --day-hours: 48;
+
+    color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior: none;
+}
+
+body {
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.app {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Header ------------------------------------------------------ */
+.app__header {
+    padding-top: env(safe-area-inset-top);
+}
+.app__title {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+.app__subtitle {
+    margin: 4px 0 0;
+    color: var(--fg-dim);
+    font-size: 0.9rem;
+}
+
+/* Interval selector ------------------------------------------ */
+.intervals {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px;
+}
+.intervals__btn {
+    appearance: none;
+    background: transparent;
+    color: var(--fg-dim);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
+    font-variant-numeric: tabular-nums;
+}
+.intervals__btn:hover { color: var(--fg); }
+.intervals__btn--active {
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+.intervals__btn:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
+}
+
+/* Timeline --------------------------------------------------- */
+.timeline-wrap {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+}
+
+/* Soft fade at top & bottom so it's clear content continues off-screen. */
+.timeline-wrap::before,
+.timeline-wrap::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 36px;
+    pointer-events: none;
+    z-index: 1;
+}
+.timeline-wrap::before {
+    top: 0;
+    background: linear-gradient(to bottom, var(--bg-elev), transparent);
+}
+.timeline-wrap::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--bg-elev), transparent);
+}
+
+.timeline {
+    height: var(--timeline-height);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    position: relative;
+}
+.timeline::-webkit-scrollbar { display: none; }
+
+.timeline__spacer {
+    height: calc(var(--timeline-height) / 2);
+    flex-shrink: 0;
+}
+
+.timeline__track {
+    position: relative;
+    /* Height is set inline by JS: day-hours * 60 * px-per-minute */
+}
+
+/* Ticks */
+.tick {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px solid var(--border);
+    scroll-snap-align: center;
+    scroll-snap-stop: normal;
+}
+.tick--hour {
+    border-top-color: var(--fg-dimmer);
+}
+.tick--5min { border-top-color: transparent; }  /* invisible but snappable */
+
+.tick__label {
+    position: absolute;
+    top: -9px;
+    left: 12px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--fg-dim);
+    background: var(--bg-elev);
+    padding: 0 6px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+}
+.tick--day .tick__label {
+    color: var(--fg);
+    font-weight: 600;
+}
+
+/* Live "now" line — slides as time passes */
+.now-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1.5px dashed var(--now);
+    pointer-events: none;
+    z-index: 2;
+    transition: top 1s linear;
+}
+.now-line__label {
+    position: absolute;
+    top: -11px;
+    right: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--now);
+    background: var(--bg-elev);
+    padding: 2px 9px 2px 7px;
+    border-radius: 999px;
+    border: 1px solid var(--now);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    appearance: none;
+    cursor: pointer;
+    pointer-events: auto;       /* override .now-line's pointer-events: none */
+    transition: background-color 120ms ease, color 120ms ease;
+}
+.now-line__label:hover {
+    background: var(--now);
+    color: var(--bg-elev);
+}
+.now-line__label:active {
+    transform: scale(0.96);
+}
+.now-line__label:focus-visible {
+    outline: 2px solid var(--now);
+    outline-offset: 2px;
+}
+.now-line__label::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: nowPulse 2s ease-out infinite;
+}
+@keyframes nowPulse {
+    0%   { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+    70%  { box-shadow: 0 0 0 7px transparent; opacity: 0.7; }
+    100% { box-shadow: 0 0 0 7px transparent; opacity: 1; }
+}
+
+/* Feeding marker pips on the timeline */
+.marker {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--bg-elev-2);
+    border: 1px solid var(--marker);
+    color: var(--marker);
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+.marker::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--marker);
+}
+
+/* Selected-time indicator (fixed at center of timeline) */
+.timeline__selector {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;   /* above the edge fades */
+}
+.timeline__selector::before,
+.timeline__selector::after {
+    content: "";
+    flex: 1;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0.6;
+}
+.timeline__selectorLabel {
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    min-width: 110px;
+    text-align: center;
+}
+
+/* Summary list ------------------------------------------------ */
+.summary {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px 16px;
+}
+.summary__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.summary__title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--fg-dim);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.summary__copy {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+.summary__copy:hover { background: var(--bg-elev-2); }
+.summary__copy:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
+}
+.summary__copy--done {
+    border-color: var(--marker);
+    color: var(--marker);
+}
+
+.feeds {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.feeds__item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: var(--bg-elev-2);
+    border-radius: var(--radius-sm);
+}
+.feeds__index {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+.feeds__time {
+    font-size: 1.15rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    flex: 1;
+}
+.feeds__relative {
+    color: var(--fg-dim);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    margin-right: 10px;
+}
+
+.feeds__timer {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    text-decoration: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    flex-shrink: 0;
+}
+.feeds__timer:hover {
+    background: var(--bg);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.feeds__timer:active {
+    transform: scale(0.96);
+}
+.feeds__timer:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
+}
+
+/* Footer ------------------------------------------------------ */
+.app__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.setup {
+    width: 100%;
+    max-width: 440px;
+    font-size: 0.85rem;
+    color: var(--fg-dim);
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+}
+.setup__summary {
+    cursor: pointer;
+    color: var(--fg);
+    font-weight: 500;
+    list-style: none;
+    padding: 2px 0;
+}
+.setup__summary::-webkit-details-marker { display: none; }
+.setup__summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 8px;
+    transition: transform 120ms ease;
+    color: var(--fg-dim);
+}
+.setup[open] .setup__summary::before { transform: rotate(90deg); }
+.setup__steps {
+    margin: 10px 0 0;
+    padding-left: 20px;
+    line-height: 1.55;
+}
+.setup__steps code {
+    background: var(--bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    word-break: break-all;
+}
+.setup__note {
+    margin: 10px 0 0;
+    padding: 8px 10px;
+    border-left: 2px solid var(--accent);
+    color: var(--fg-dim);
+    font-size: 0.82rem;
+    background: var(--bg);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.app__footerBtn {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg-dim);
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease;
+}
+.app__footerBtn:hover {
+    color: var(--fg);
+    border-color: var(--fg-dimmer);
+}
+
+/* Small phones */
+@media (max-width: 360px) {
+    .app { padding-left: 12px; padding-right: 12px; }
+    .feeds__time { font-size: 1.05rem; }
+    .timeline__selectorLabel { font-size: 0.88rem; padding: 5px 12px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .timeline { scroll-behavior: auto; }
+    * { transition: none !important; }
+}

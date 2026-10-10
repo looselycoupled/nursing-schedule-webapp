@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0f1a" />
+    <title>Nursing Schedule</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+    <main class="app">
+        <header class="app__header">
+            <h1 class="app__title">Nursing Schedule</h1>
+            <p class="app__subtitle">Scroll the timeline to the last feeding.</p>
+        </header>
+
+        <section class="intervals" aria-label="Feeding interval">
+            {% for minutes in intervals %}
+            <button
+                type="button"
+                class="intervals__btn{% if minutes == default_interval %} intervals__btn--active{% endif %}"
+                data-minutes="{{ minutes }}"
+            >
+                {% if minutes % 60 == 0 %}
+                    {{ (minutes // 60) }}h
+                {% else %}
+                    {{ (minutes // 60) }}½h
+                {% endif %}
+            </button>
+            {% endfor %}
+        </section>
+
+        <section class="timeline-wrap" aria-label="Last feeding timeline">
+            <div class="timeline" id="timeline">
+                <div class="timeline__spacer" aria-hidden="true"></div>
+                <div class="timeline__track" id="track">
+                    <!-- Ticks + feeding markers injected by JS -->
+                </div>
+                <div class="timeline__spacer" aria-hidden="true"></div>
+            </div>
+            <div class="timeline__selector" aria-hidden="true">
+                <span class="timeline__selectorLabel" id="selectedTime">--:--</span>
+            </div>
+        </section>
+
+        <section class="summary" aria-live="polite">
+            <div class="summary__header">
+                <h2 class="summary__title">Next {{ default_count }} feedings</h2>
+                <button type="button" id="copyBtn" class="summary__copy">Copy</button>
+            </div>
+            <ol class="feeds" id="feedList"></ol>
+        </section>
+
+        <footer class="app__footer">
+            <button type="button" id="nowBtn" class="app__footerBtn">Jump to now</button>
+            <details class="setup" id="setupTimer" hidden>
+                <summary class="setup__summary">Set up iOS timer button</summary>
+                <ol class="setup__steps">
+                    <li>Open the <strong>Shortcuts</strong> app on your iPhone.</li>
+                    <li>Create a new shortcut named exactly
+                        <code>Start Feeding Timer</code>.</li>
+                    <li>Tap the ⓘ details button up top and set
+                        <em>Accept</em> to <strong>Text</strong>.</li>
+                    <li>Add one action: <strong>Start Timer</strong>.</li>
+                    <li>In that action's <em>Duration</em> field, delete the
+                        default <code>5</code>, then tap the variable pill
+                        above the keyboard (or type <code>@</code>) and
+                        insert <strong>Shortcut Input</strong>. Duration
+                        should now be a colored pill, not a typed number.</li>
+                    <li>Set the unit next to Duration to <strong>Minutes</strong>
+                        and save.</li>
+                    <li>Test it: open Safari and paste
+                        <code>shortcuts://run-shortcut?name=Start%20Feeding%20Timer&amp;input=text&amp;text=42</code>
+                        — you should get a 42-minute timer.</li>
+                </ol>
+                <p class="setup__note">
+                    If the timer always runs for 5 minutes, the Duration field
+                    still holds the default number rather than the variable.
+                </p>
+            </details>
+        </footer>
+    </main>
+
+    <script>
+        window.__APP_CONFIG__ = {
+            intervals: {{ intervals|tojson }},
+            defaultInterval: {{ default_interval|tojson }},
+            defaultCount: {{ default_count|tojson }},
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
