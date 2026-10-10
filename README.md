@@ -8,6 +8,10 @@ feeding times at a glance.
 Designed mobile-first, dark by default, and intentionally kept simple — no
 database, no build step, no frameworks.
 
+| Schedule | On iPhone |
+|:---:|:---:|
+| ![Timeline with the last feeding marked and the next two feedings listed](docs/screenshots/schedule.png) | ![Same view on iOS, with a timer button next to each upcoming feeding](docs/screenshots/iphone.png) |
+
 ## Run with Docker Compose
 
 ```bash
